@@ -1,0 +1,3 @@
+name: datgui
+dependencies:
+  browser: any
