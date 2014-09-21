@@ -1,3 +1,3 @@
 datgui
 ======
-A Dart wapper of [dat.gui](http://code.google.com/p/dat-gui/)
+A Dart wrapper of [dat.gui](http://code.google.com/p/dat-gui/)
