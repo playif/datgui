@@ -1,7 +1,7 @@
 library datgui;
 
 import "dart:js";
-@MirrorsUsed(targets:const ['datgui'], override: '*')
+@MirrorsUsed(targets: const ['datgui'], override: '*')
 import "dart:mirrors";
 
 
@@ -19,10 +19,7 @@ class GUI {
     _gui = new JsObject(_dat['GUI']);
   }
 
-  GUI._fromGUI(this._gui) {
-
-  }
-
+  GUI._fromGUI(this._gui);
 
   Controller add(Object object, String property, [arg1, arg2 = null]) {
     Object value;
@@ -48,14 +45,14 @@ class GUI {
     };
     JsObject cont;
     if (arg1 is List) {
-      //cont = _gui.callMethod("add", [new JsObject.jsify(data), property, arg1]);
       arg1 = new JsArray.from(arg1);
-    } else if (arg1 is Map) {
       arg1 = new JsObject.jsify(arg1);
     }
-    cont = _gui.callMethod("add", [new JsObject.jsify(data), property, arg1, arg2]);
+    cont =
+        _gui.callMethod("add", [new JsObject.jsify(data), property, arg1, arg2]);
 
-    Controller controller = new Controller._(data, cont, object, property, value);
+    Controller controller =
+        new Controller._(data, cont, object, property, value);
     controllers.add(controller);
     return controller;
   }
@@ -65,9 +62,11 @@ class GUI {
     Map data = {
       property: value
     };
-    JsObject cont = _gui.callMethod("addColor", [new JsObject.jsify(data), property]);
+    JsObject cont =
+        _gui.callMethod("addColor", [new JsObject.jsify(data), property]);
 
-    Controller controller = new Controller._(data, cont, object, property, value);
+    Controller controller =
+        new Controller._(data, cont, object, property, value);
     controllers.add(controller);
     return controller;
   }
@@ -193,39 +192,49 @@ class GUI {
 
 }
 
-typedef ChangeFunc(value);
+typedef void ChangeFunc(var value);
 
 class Controller {
   var _data;
   JsObject _cont;
-  Object _object;
+  // Object or Map
+  var _object;
   String _property;
+  Object _dv;
+  Function _onChange;
 
-  Controller._(this._data, this._cont, this._object, this._property, Object dv) {
-    if (dv is! Function) {
-      _cont.callMethod('onChange', [(value) {
-          if (dv is String && value is num) {
-            value = value.toString();
-          } else if (dv is num && value is String) {
-            value = num.parse(value);
-          }
-          if(_object is Map){
-            (_object as Map)[_property]=value;
-          }
-          else{
-            reflect(_object).setField(new Symbol(_property), value);
-          }
+  Controller._(this._data, this._cont, this._object, this._property, this._dv) {
+    _cont.callMethod('onChange', [_onChangeProxy]);
+  }
 
-        }]);
+  Controller._fromCont(this._cont);
+
+  Controller onChange(ChangeFunc func) {
+    _onChange = func;
+    return this;
+  }
+
+  // Proxy the onchange method so dart values can be changed.
+  void _onChangeProxy(Object value) {
+    if (_dv is! Function) {
+      if (_dv is String && value is num) {
+        value = value.toString();
+      } else if (_dv is num && value is String) {
+        value = num.parse(value);
+      }
+      if (_object is Map) {
+        _object[_property] = value;
+      } else {
+        reflect(_object).setField(new Symbol(_property), value);
+      }
+    }
+    if (_onChange != null) {
+      _onChange(value);
     }
   }
 
-  Controller._fromCont(this._cont) {
-
-  }
-
-  Controller onChange(Function func) {
-    _cont.callMethod('onChange', [new JsFunction.withThis(func)]);
+  Controller onFinishChange(ChangeFunc func) {
+    _cont.callMethod("onFinishChange", [func]);
     return this;
   }
 

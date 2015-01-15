@@ -1,5 +1,5 @@
 name: datgui
-version: 0.2.0+1
+version: 0.2.0+2
 description:
   A Dart wapper of dat-gui.
 author: playif <playif@gmail.com>
