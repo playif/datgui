@@ -1,136 +1,188 @@
+library datgui;
+
 import "dart:js";
+@MirrorsUsed(targets:const ['datgui'], override: '*')
 import "dart:mirrors";
+
 
 final JsObject _dat = context['dat'];
 
 class GUI {
 
   JsObject _gui;
+  List<GUI> _folders = [];
+  List<Controller> _controllers = [];
 
   //{bool autoPlace:true,scrollable:false,resizable:true}
+
   GUI() {
     _gui = new JsObject(_dat['GUI']);
   }
 
-  GUI._fromGUI(this._gui){
+  GUI._fromGUI(this._gui) {
 
   }
 
 
+  Controller add(Object object, String property, [arg1, arg2 = null]) {
+    Object value;
 
-  Controller add(Object object, String property, [arg1, arg2=null]) {
-    Object value = reflect(object).getField(new Symbol(property)).reflectee;
+    if (object is Map) {
+      if (!object.containsKey(property)) {
+        if (arg1 is List) {
+          object[property] = arg1.first;
+        } else if (arg1 is Map) {
+          object[property] = arg1.values.first;
+        } else {
+          object[property] = arg1;
+        }
+      }
+
+      value = object[property];
+    } else {
+      value = reflect(object).getField(new Symbol(property)).reflectee;
+    }
+
     Map data = {
-        property:value
+      property: value
     };
     JsObject cont;
     if (arg1 is List) {
       //cont = _gui.callMethod("add", [new JsObject.jsify(data), property, arg1]);
       arg1 = new JsArray.from(arg1);
-    }
-    else if (arg1 is Map) {
+    } else if (arg1 is Map) {
       arg1 = new JsObject.jsify(arg1);
     }
     cont = _gui.callMethod("add", [new JsObject.jsify(data), property, arg1, arg2]);
-    return new Controller._(data, cont, object, property, value);
+
+    Controller controller = new Controller._(data, cont, object, property, value);
+    controllers.add(controller);
+    return controller;
   }
 
   Controller addColor(Object object, String property) {
     Object value = reflect(object).getField(new Symbol(property)).reflectee;
     Map data = {
-        property:value
+      property: value
     };
     JsObject cont = _gui.callMethod("addColor", [new JsObject.jsify(data), property]);
-    return new Controller._(data, cont, object, property, value);
+
+    Controller controller = new Controller._(data, cont, object, property, value);
+    controllers.add(controller);
+    return controller;
   }
 
-  GUI addFolder(String name){
-    return new GUI._fromGUI(_gui.callMethod("addFolder", [name]));
+  GUI addFolder(String name) {
+    GUI folder = new GUI._fromGUI(_gui.callMethod("addFolder", [name]));
+    folders.add(folder);
+    return folder;
   }
 
-  open(){
+  List<GUI> get folders {
+    return _folders;
+//    Map fs = JSON.decode(context['JSON'].callMethod('stringify', [_gui['__folders']]));
+//
+//    //JsObject fs = _gui['__folders'];
+//    List result = [];
+//    for (JsObject f in fs.values) {
+//      result.add(new GUI._fromGUI(f));
+//    }
+//    return result;
+  }
+
+  List<Controller> get controllers {
+    return _controllers;
+//    JsArray cs = _gui['__controllers'];
+//    List result = [];
+//    for (JsObject c in cs) {
+//      result.add(new Controller._fromCont(c));
+//    }
+//    return result;
+  }
+
+  open() {
     _gui.callMethod("open");
   }
 
-  close(){
+  close() {
     _gui.callMethod("close");
   }
 
-  destroy(){
+  destroy() {
     _gui.callMethod("destroy");
   }
 
-  remove(Controller controller){
-    _gui.callMethod("remove",[controller._cont]);
+  remove(Controller controller) {
+    controllers.remove(controller);
+    _gui.callMethod("remove", [controller._cont]);
   }
 
-  GUI getRoot(){
+  GUI getRoot() {
     return new GUI._fromGUI(_gui.callMethod("getRoot"));
   }
 
-  save(){
+  save() {
     _gui.callMethod("save");
   }
 
-  saveAs(){
+  saveAs() {
     _gui.callMethod("saveAs");
   }
 
-  revert([GUI gui]){
-    if(gui != null){
-      _gui.callMethod("revert",[gui._gui]);
-    }
-    else{
+  revert([GUI gui]) {
+    if (gui != null) {
+      _gui.callMethod("revert", [gui._gui]);
+    } else {
       _gui.callMethod("revert");
     }
 
   }
 
-  listen(Controller controller){
-    _gui.callMethod("listen",[controller._cont]);
+  listen(Controller controller) {
+    _gui.callMethod("listen", [controller._cont]);
   }
 
 //  remember(Object obj){
 //    _gui.callMethod("remember",[]);
 //  }
 
-  bool get closed{
+  bool get closed {
     return _gui['closed'];
   }
 
-  set closed (bool value){
-    _gui['closed']=value;
+  set closed(bool value) {
+    _gui['closed'] = value;
   }
 
-  String get name{
+  String get name {
     return _gui['name'];
   }
 
-  set name (String value){
-    _gui['name']=value;
+  set name(String value) {
+    _gui['name'] = value;
   }
 
-  num get width{
+  num get width {
     return _gui['width'];
   }
 
-  set width (num value){
-    _gui['width']=value;
+  set width(num value) {
+    _gui['width'] = value;
   }
 
-  String get preset{
+  String get preset {
     return _gui['preset'];
   }
 
-  set preset (String value){
-    _gui['preset']=value;
+  set preset(String value) {
+    _gui['preset'] = value;
   }
 
-  bool get autoPlace{
+  bool get autoPlace {
     return _gui['autoPlace'];
   }
 
-  bool get scrollable{
+  bool get scrollable {
     return _gui['scrollable'];
   }
 
@@ -141,24 +193,45 @@ class GUI {
 
 }
 
+typedef ChangeFunc(value);
+
 class Controller {
-  var data;
+  var _data;
   JsObject _cont;
   Object _object;
   String _property;
 
-  Controller._(this.data, this._cont, this._object, this._property, Object dv){
+  Controller._(this._data, this._cont, this._object, this._property, Object dv) {
     if (dv is! Function) {
-      _cont.callMethod('onChange', [(Object value) {
-        if (dv is String && value is num) {
-          value = value.toString();
-        }
-        else if (dv is num && value is String) {
-          value = num.parse(value);
-        }
-        reflect(_object).setField(new Symbol(_property), value);
-      }]);
+      _cont.callMethod('onChange', [(value) {
+          if (dv is String && value is num) {
+            value = value.toString();
+          } else if (dv is num && value is String) {
+            value = num.parse(value);
+          }
+          if(_object is Map){
+            (_object as Map)[_property]=value;
+          }
+          else{
+            reflect(_object).setField(new Symbol(_property), value);
+          }
+
+        }]);
     }
+  }
+
+  Controller._fromCont(this._cont) {
+
+  }
+
+  Controller onChange(Function func) {
+    _cont.callMethod('onChange', [new JsFunction.withThis(func)]);
+    return this;
+  }
+
+  Controller updateDisplay() {
+    _cont.callMethod('updateDisplay');
+    return this;
   }
 
   Controller step(num value) {

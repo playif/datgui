@@ -1,6 +1,7 @@
-import "package:datgui/gui.dart" as dat;
 import "dart:math";
 import "dart:html";
+import "package:datgui/datgui.dart" as dat;
+
 //class FizzyText {
 //  String message;
 //  num speed;
