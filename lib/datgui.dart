@@ -4,11 +4,9 @@ import "dart:js";
 @MirrorsUsed(targets: const ['datgui'], override: '*')
 import "dart:mirrors";
 
-
 final JsObject _dat = context['dat'];
 
 class GUI {
-
   JsObject _gui;
   List<GUI> _folders = [];
   List<Controller> _controllers = [];
@@ -40,33 +38,25 @@ class GUI {
       value = reflect(object).getField(new Symbol(property)).reflectee;
     }
 
-    Map data = {
-      property: value
-    };
+    Map data = {property: value};
     JsObject cont;
     if (arg1 is List) {
       arg1 = new JsArray.from(arg1);
       arg1 = new JsObject.jsify(arg1);
     }
-    cont =
-        _gui.callMethod("add", [new JsObject.jsify(data), property, arg1, arg2]);
+    cont = _gui.callMethod("add", [new JsObject.jsify(data), property, arg1, arg2]);
 
-    Controller controller =
-        new Controller._(data, cont, object, property, value);
+    Controller controller = new Controller._(data, cont, object, property, value);
     controllers.add(controller);
     return controller;
   }
 
   Controller addColor(Object object, String property) {
     Object value = reflect(object).getField(new Symbol(property)).reflectee;
-    Map data = {
-      property: value
-    };
-    JsObject cont =
-        _gui.callMethod("addColor", [new JsObject.jsify(data), property]);
+    Map data = {property: value};
+    JsObject cont = _gui.callMethod("addColor", [new JsObject.jsify(data), property]);
 
-    Controller controller =
-        new Controller._(data, cont, object, property, value);
+    Controller controller = new Controller._(data, cont, object, property, value);
     controllers.add(controller);
     return controller;
   }
@@ -134,7 +124,6 @@ class GUI {
     } else {
       _gui.callMethod("revert");
     }
-
   }
 
   listen(Controller controller) {
@@ -188,8 +177,6 @@ class GUI {
   GUI get parent {
     return new GUI._fromGUI(_gui.callMethod("parent"));
   }
-
-
 }
 
 typedef void ChangeFunc(var value);
@@ -204,7 +191,9 @@ class Controller {
   Function _onChange;
 
   Controller._(this._data, this._cont, this._object, this._property, this._dv) {
-    _cont.callMethod('onChange', [_onChangeProxy]);
+    if (_dv is! Function) {
+      _cont.callMethod('onChange', [_onChangeProxy]);
+    }
   }
 
   Controller._fromCont(this._cont);
@@ -257,5 +246,4 @@ class Controller {
     _cont.callMethod('min', [value]);
     return this;
   }
-
 }
