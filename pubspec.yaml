@@ -1,8 +1,7 @@
 name: datgui
-version: 0.1.0+1
-description:
-  A Dart wapper of dat-gui.
+version: 0.2.1+2
 author: playif <playif@gmail.com>
+description: A Dart wapper of dat-gui.
 homepage: https://github.com/playif/datgui
 dependencies:
   browser: any
